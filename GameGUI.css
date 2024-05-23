@@ -12,3 +12,21 @@ QLabel#num{
     font-weight: bold;
     font-size: 90px;
 }
+
+QLabel#time{
+    color: rgb(145, 137, 255);
+    font-weight: bold;
+    font-size: 40px;
+}
+
+QLabel#maintitle{
+    color: rgb(244, 244, 255);
+    font-weight: bold;
+    font-size: 90px;
+}
+
+QLabel#mode{
+    color: rgb(255, 220, 21);
+    font-weight: bold;
+    font-size: 30px;
+}

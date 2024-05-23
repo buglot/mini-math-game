@@ -221,8 +221,11 @@ class guisetting(QWidget):
         try:
             self.__setting.setTimeofStep(int(self.__lineEdittimeofstep.text()))
         except:
-            self.__lineEdittimeofstep.setText(str(1))
-            self.__setting.setTimeofStep(1)
+            try:
+                self.__setting.setTimeofStep(float(self.__lineEdittimeofstep.text()))
+            except:
+                self.__lineEdittimeofstep.setText(str(1))
+                self.__setting.setTimeofStep(1)
 
     def check(self,state:QEvent):
         sender = self.sender()

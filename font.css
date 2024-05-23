@@ -21,3 +21,7 @@ QPushButton:pressed {
 QMainWindow#my {
     background-color: rgb(23, 11, 36);
 }
+
+QLineEdit{
+    font-size: 40px;
+}
