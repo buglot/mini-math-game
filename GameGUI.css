@@ -1,0 +1,14 @@
+QLabel#des{
+    color: rgb(150, 150, 150);
+    font-size: 16px;
+}
+QLabel#total{
+    color: rgb(103, 212, 255);
+    font-size: 17px;
+    font-weight: bold;
+}
+QLabel#num{
+    color: rgb(161, 255, 250);
+    font-weight: bold;
+    font-size: 90px;
+}

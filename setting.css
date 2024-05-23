@@ -1,0 +1,51 @@
+QWidget#my {
+    background-color: rgb(23, 11, 36);
+}
+
+QPushButton {
+    font-size: 18px;
+    color: white;
+    border-radius: 10px;
+    padding: 5px;
+}
+
+QPushButton#save {
+    background-color: blue;
+}
+QPushButton#save:hover {
+    background-color: rgb(33, 33, 105);
+}
+QPushButton#save:pressed {
+    background-color: rgb(112, 112, 177);
+}
+QPushButton#load:hover {
+    background-color: rgb(36, 39, 61);
+}
+QPushButton#load {
+    background-color: rgb(8, 13, 49);
+}
+QPushButton#load:hover {
+    background-color: rgb(36, 39, 61);
+}
+QPushButton#load:pressed {
+    background-color: rgb(64, 66, 87);
+}
+
+QCheckBox{
+    padding: 4px;
+    font-size: 16px;
+    border-radius: 10px;
+}
+
+QCheckBox:checked {
+    background-color: greenyellow;
+    color: black;
+}
+
+QCheckBox:checked:hover {
+    background-color: rgb(130, 194, 35);
+    color: black;
+}
+QCheckBox:hover{
+    background-color: rgb(51, 34, 70);
+}
