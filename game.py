@@ -2,6 +2,7 @@ from PyQt6.QtCore import Qt,pyqtSignal,QTimer, QTime
 from PyQt6.QtWidgets import QWidget,QPushButton,QLabel,QLineEdit,QHBoxLayout,QVBoxLayout,QMainWindow,QMessageBox,QStyle
 from setting import Setting,guisetting,operation as Op
 from typing import List
+from mutiplayer.muti import Mutimenu
 import random
 class Answer(QWidget):
     def __init__(self) -> None:
@@ -220,6 +221,7 @@ class Game:
             print(self.__numbers[self.__nowMatch][self.step])
         except:
             self.timer.stop()
+            self.changebg()
             self.onGameScreen(False)
             self.send = Answer()
             self.setPage(self.send)
@@ -298,7 +300,7 @@ class Game:
         self.setBg =n     
     def changebg1(self):
         self.setBg(self.defualtbg+"""QMainWindow#my {
-            background-color: rgb(20, 9, 25);
+            background-color: rgb(14, 5, 25);
         }
         """)
     def changebg(self):
@@ -341,7 +343,10 @@ class menuplay(QWidget):
         self.layout1.addWidget(self.buttonmutiplayer)
         self.layout1.addWidget( self.buttonback)
         self.buttonback.clicked.connect(self.__buttonblackaction)
+        self.buttonmutiplayer.clicked.connect(self.__buttonmutiaction)
         self.buttonsolo.clicked.connect(self.__buttonsoloClickAction)
+    def __buttonmutiaction(self):
+        self.game.setPage(Mutimenu(self.game))
     def __buttonblackaction(self):
         self.game.setPage(font(self.game))
     def __buttonsoloClickAction(self):

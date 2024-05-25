@@ -25,3 +25,7 @@ QMainWindow#my {
 QLineEdit{
     font-size: 40px;
 }
+
+QPushButton#mutiready {
+    background-color: rgb(61, 255, 61);
+}
