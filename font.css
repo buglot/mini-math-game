@@ -28,4 +28,12 @@ QLineEdit{
 
 QPushButton#mutiready {
     background-color: rgb(61, 255, 61);
+    color:black;
+}
+QPushButton#mutiready:hover {
+    background-color: rgb(43, 129, 43);
+}
+
+QPushButton#mutiready:disabled {
+    background-color: rgb(71, 73, 71);
 }

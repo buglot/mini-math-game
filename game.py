@@ -310,6 +310,18 @@ class Game:
         if self.setting.operation1ormore():
             return True
         return False
+    def MenuMainPage(self):
+        return Menuplay(self)
+    def FontPage(self):
+        return font(self)
+    def AnswerPage(self):
+        return Answer()
+    def GamePage(self)->GameGUI:
+        return GameGUI(1)
+    def FramePage(self):
+        return Frame(self)
+    def MutimenuPage(self):
+        return Mutimenu(self)
 class font(QWidget):
     def __init__(self,Game:Game) -> None:
         super().__init__()
@@ -327,9 +339,9 @@ class font(QWidget):
         self.buttonsetting.clicked.connect(self.game.showsetting)
         self.buttonplay1.clicked.connect(self.buttonplay)
     def buttonplay(self):
-        self.game.setPage(menuplay(self.game))
+        self.game.setPage(Menuplay(self.game))
 
-class menuplay(QWidget):
+class Menuplay(QWidget):
     def __init__(self,Game:Game) -> None:
         super().__init__()
         self.setObjectName("bg")

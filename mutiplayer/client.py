@@ -1,8 +1,8 @@
 import socket
-from PyQt6.QtWidgets import QTextEdit, QVBoxLayout, QWidget,QLabel,QPushButton,QHBoxLayout
-from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot, QThread
+from PyQt6.QtWidgets import QTextEdit, QVBoxLayout, QWidget,QLabel,QPushButton,QHBoxLayout,QLineEdit
+from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot, QThread,Qt
 from mutiplayer.server import ServerWindow
-
+# from game import Game
 class SocketServerisAlive(QThread):
     checkServerAlive = pyqtSignal(bool)
     def __init__(self, s):
@@ -54,6 +54,8 @@ class SocketThread(QThread):
         except ConnectionError as e:
             print(f"Connection error: {e}")
             self.connection_status_changed.emit(False)
+        except Exception as e:
+            print(f"Connection error: {e}")
     def send(self,s):
         self.s.send(s)
     def stop(self):
@@ -63,8 +65,35 @@ class SocketThread(QThread):
     def getS(self):
         return self.s
 
+class ConnectIP_port(QWidget):
+    def __init__(self,game):
+        super().__init__()
+        layout2 = QVBoxLayout()
+        self.game = game
+        self.ip = QLineEdit()
+        self.ip.setPlaceholderText("IP")
+        self.port =QLineEdit()
+        self.port.setPlaceholderText("Port")
+        self.name = QLineEdit()
+        self.name.setPlaceholderText("Your Name")
+        self.button = QPushButton("connect")
+        self.back = QPushButton("Back Mutiplay")
+        layout2.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout2.addWidget(self.ip)
+        layout2.addWidget(self.port)
+        layout2.addWidget(self.name)
+        layout2.addWidget(self.button)
+        layout2.addWidget(self.back)
+        self.setLayout(layout2)
+        self.button.clicked.connect(self.__connect)
+        self.back.clicked.connect(self.__back)
+    def __back(self):
+        self.game.setPage(self.game.MutimenuPage())
+    def __connect(self):
+        game = clientGui(self.ip.text(),port=int(self.port.text()))
+        game.setgame(self.game)
+        self.game.setPage(game)
 class clientGui(QWidget):
-    closeClient = pyqtSignal(bool)
     def __init__(self,host="localhost",port=3430,master=False):
         super().__init__()
         self.__master = master
@@ -78,6 +107,7 @@ class clientGui(QWidget):
         self.__listpeoplename = QLabel()
         self.__ready = QPushButton("Ready")
         self.__ready.setObjectName("mutiready")
+        self.__ready.setDisabled(True)
         self.__butclose = QPushButton("Exit Room")
         self.__butclose.clicked.connect(self.closebuttonEvent)
         layout2 = QVBoxLayout()
@@ -93,7 +123,8 @@ class clientGui(QWidget):
             self.serverview.ServerIsStarted.connect(self.__ConnectServer)
         else:
             self.__ConnectServer(False)
-
+    def setgame(self,game):
+        self.game = game
     def __ConnectServer(self,b):
         if b:
             self.port = self.serverview.getPort()
@@ -114,18 +145,21 @@ class clientGui(QWidget):
     def update_connection_status(self, connected):
         if connected:
             self.report.setText("Connected to the server.")
+            self.__ready.setDisabled(False)
         else:
-            self.report.setText("donnected to the server.")
+            self.report.setText("disconnected to the server.")
+            self.__ready.setDisabled(True)
     def closebuttonEvent(self):
         self.socket_thread.stop()
-        print("ss")
-        self.closeClient.emit(True)
+        if self.__master:
+            self.serverview.close()
+        self.game.setPage(self.game.MutimenuPage())
     def closeEvent(self, event):
-        self.socket_thread.stop()
+        
         super().closeEvent(event)
     def __dochecker(self, b: bool):
         if not b:
-            self.report.setText("donnected to the server.")
-            
+            self.report.setText("disconnected to the server.")
+            self.__ready.setDisabled(True)
         print(b)
             

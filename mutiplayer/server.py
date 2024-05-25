@@ -9,21 +9,27 @@ class ClientHandler(QThread):
         super().__init__()
         
         self.running = True
-    def setC(self,client_socket):
+    def setC(self,client_socket:socket.socket):
         self.client_socket =client_socket
     def run(self):
         d=0
         with self.client_socket:
             while self.running:
-                data = self.client_socket.recv(1024)
-                if not data:
-                    break
-                message = data.decode('utf-8')
-                self.message_received.emit(message)
+                try:
+                    data = self.client_socket.recv(1024)
+                    if not data:
+                        break
+                    message = data.decode('utf-8')
+                    self.message_received.emit(message)
+                except Exception as E:
+                    print(E)
     
     def stop(self):
         self.running = False
+        
+        self.client_socket.close()
         print("stop")
+        self.quit()
 
 class ServerWindow(QWidget):
     ServerIsStarted = pyqtSignal(bool)
@@ -62,10 +68,9 @@ class ServerWindow(QWidget):
     def display_message(self, message):
         self.text_edit.append(message)
     def closeEvent(self, event):
-        if self.handler !=None:
+        if self.handler:
             self.handler.stop()
         self.server_thread.stop()
-        
         super().closeEvent(event)
     def server_thread_ended(self):
         print("server closed")
