@@ -2,7 +2,7 @@ from PyQt6.QtCore import Qt,pyqtSignal,QTimer, QTime
 from PyQt6.QtWidgets import QWidget,QPushButton,QLabel,QLineEdit,QHBoxLayout,QVBoxLayout,QMainWindow,QMessageBox,QStyle
 from setting import Setting,guisetting,operation as Op
 from typing import List
-from mutiplayer.muti import Mutimenu
+from mutiplayer.muti import Mutimenu,Mutiplayer
 import random
 class Answer(QWidget):
     def __init__(self) -> None:
@@ -165,6 +165,7 @@ class Game:
         self.showsetting = showsetting
         self.onGameScreen = onGameScreen
         self.__nowMatch = 0
+        self.Muti = Mutiplayer(self)
     def start(self,mode=1):
         if mode ==2:
             pass
@@ -358,7 +359,7 @@ class Menuplay(QWidget):
         self.buttonmutiplayer.clicked.connect(self.__buttonmutiaction)
         self.buttonsolo.clicked.connect(self.__buttonsoloClickAction)
     def __buttonmutiaction(self):
-        self.game.setPage(Mutimenu(self.game))
+        self.game.setPage(self.game.Muti.MutimenuPage())
     def __buttonblackaction(self):
         self.game.setPage(font(self.game))
     def __buttonsoloClickAction(self):

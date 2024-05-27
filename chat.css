@@ -1,0 +1,19 @@
+QWidget#chatme {
+    padding: 3px;
+    border-radius: 10px;
+    background-color: rgb(71, 97, 216);
+}
+QWidget#chatOther {
+    background-color: rgb(117, 27, 72);
+    padding: 3px;
+    border-radius: 10px;
+}
+QLabel#chat{
+    color: white;
+    font-size: 16px;
+}
+QLabel#name{
+    color: white;
+    font-weight: bold;
+    font-size: 16px;
+}

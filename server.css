@@ -1,0 +1,23 @@
+QLabel#Lurl{
+    color: rgb(178, 178, 255);
+    text-decoration: underline;
+    font-size: 18px;
+}
+
+QLabel#Lurl:hover{
+    color: rgb(41, 41, 243);
+}
+
+QLabel#Lurl:pressed{
+    color: rgb(39, 39, 59);
+}
+
+QLabel#OpenServer{
+    color: rgb(238, 255, 5);
+    font-size: 18px;
+}
+QCheckBox:checked {
+    background-color: rgb(255, 93, 71);
+    border-radius: 10px;
+    padding: 4px;
+}

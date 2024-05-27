@@ -1,2 +1,8 @@
 env/
 **/__pycache__
+output/
+certificate.pfx
+uuid.id
+version.txt
+Page/
+setting.json
