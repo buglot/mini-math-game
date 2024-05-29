@@ -51,6 +51,7 @@ class ClientHandler(QThread):
 
 class ServerWindow(QWidget):
     ServerIsStarted = pyqtSignal(bool)
+    ServerIsTabClose = pyqtSignal(bool)
     serverlist:List[ClientHandler]
     listpeople:List[Player]
     def __init__(self):
@@ -121,6 +122,12 @@ class ServerWindow(QWidget):
     def __GameAction(self,data:dict):
         self.gameLog.append(TypeMassnge.ActionGameControll(data["action"]).name)
         match TypeMassnge.ActionGameControll(data["action"]):
+            case TypeMassnge.ActionGameControll.READY:
+                for x in self.listpeople:
+                    if data["name"] == x.name and data["uuid"] == x.uuid:
+                        x.ready = data["ready"]
+                        break
+                self.sendsAll(self.TypeM.encode(data).encode())
             case TypeMassnge.ActionGameControll.ENDGAME:
                 pass
             case TypeMassnge.ActionGameControll.GETSETTING:
@@ -182,7 +189,6 @@ class ServerWindow(QWidget):
                     if x.name == data["name"] and data["uuid"]==x.uuid:
                         self.listpeople.remove(x)
                         break
-                print("Server 130",self.listpeople)
                 data = {"type":TypeMassnge.Type.SYSTEMCALL.value,
                         "action":TypeMassnge.ActionSystemCall.GETLISTPEOPLE.value,
                         "nPeople":len(self.listpeople),
@@ -221,12 +227,11 @@ class ServerWindow(QWidget):
         self.serverlist.append(self.handler)
         self.handler.start()
     def __closeClientConnect(self,f:ClientHandler):
-        print(f,self.serverlist)
         try:
             self.serverlist.remove(f)
             self.TypeM.isType(self.TypeM.encode(f.deleteList()))
         except ValueError as E:
-            print("Error ValueError 170",E)
+            print("Error ValueError 233",E)
         
 
     @pyqtSlot(str)
@@ -236,6 +241,7 @@ class ServerWindow(QWidget):
         if self.handler:
             self.handler.stop()
         self.server_thread.stop()
+        self.ServerIsTabClose.emit(False)
         super().closeEvent(event)
     def server_thread_ended(self):
         print("server closed")
@@ -267,7 +273,7 @@ class ServerThread(QThread):
                 self.client_connected.emit(self.client_socket)
             except Exception as e:
                 print("Error accepting connection:", e)
-                break
+                self.stop()
     def stop(self):
         self.running = False
         self.server_socket.close()

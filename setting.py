@@ -126,6 +126,11 @@ class guisetting(QWidget):
         self.__setting.loadSave() # new loading for sure
         self.__dataSetting = self.__setting.getSetting()
         self.setStyleSheet(self.css())
+        # top pin
+        self.pintop = QCheckBox()
+        self.pintop.setText("Pin Top")
+        self.pintop.setChecked(True)
+        self.pintop.stateChanged.connect(self.__checkstateChange)
         # layout
         self.__layoutcol = QVBoxLayout()
         self.__layoutrow1 = QHBoxLayout()
@@ -197,6 +202,7 @@ class guisetting(QWidget):
 
 
         # layoutcol add layoutrow
+        self.__layoutcol.addWidget(self.pintop)
         self.__layoutcol.addLayout(self.__layoutrow1)
         self.__layoutcol.addLayout(self.__layoutrow2)
         self.__layoutcol.addLayout(self.__layoutrow3)
@@ -216,8 +222,14 @@ class guisetting(QWidget):
     def OnlyView(self):
         self.__savebutton.setVisible(False)
         self.__loaddefault.setVisible(False)
+        self.pintop.setVisible(False)
         self.setDisabled(True)
-
+    def __checkstateChange(self,e):
+        if Qt.CheckState(e) == Qt.CheckState.Checked:
+            self.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint,True)
+        else:
+            self.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint, False)
+        self.show()
     def __savebuttonActionClick(self,e):
         if self.multiw:
             self.__setting.setMulti(self.settingMulti)

@@ -35,6 +35,7 @@ class TypeMassnge(QObject):
         EXIT = 3
         JOIN = 4
     class ActionGameControll(enum.Enum):
+        READY=1
         WAIT=2
         LOADMAP=3
         SETTING=4
