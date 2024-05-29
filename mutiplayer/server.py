@@ -70,7 +70,7 @@ class ServerWindow(QWidget):
         self.checkbox = QCheckBox()
         self.checkbox.setText("Pin Top")
         self.checkbox.setChecked(True)
-        self.checkbox.checkStateChanged.connect(self.checkboxAction)
+        self.checkbox.stateChanged.connect(self.checkboxAction)
         self.host.setToolTip("Click for Copy")
         self.port.setToolTip("Click for Copy")
         self.host.mouseReleaseEvent = self.copy
