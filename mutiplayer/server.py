@@ -151,7 +151,7 @@ class ServerWindow(QWidget):
         self.chat.append(data["name"]+":"+data["msg"])
         self.sendsAll(self.TypeM.encode(data=data).encode())
     def checkboxAction(self,e):
-        if e== Qt.CheckState.Checked:
+        if e== Qt.CheckState.Checked.value:
             self.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint,True)
         else:
             self.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint, False)
