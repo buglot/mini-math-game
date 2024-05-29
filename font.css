@@ -3,7 +3,16 @@ QLabel {
     font-size: 30px;
     text-align: center;
 }
-
+QLabel#multi{
+    color: rgb(141, 139, 255);
+    font-size: 30px;
+    text-align: center;
+}
+QLabel#reportmulti{
+    color: rgb(122, 255, 89);
+    font-size: 18px;
+    text-align: center;
+}
 QPushButton {
     font-size: 18px;
     color: white;

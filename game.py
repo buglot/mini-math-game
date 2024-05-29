@@ -323,6 +323,10 @@ class Game:
         return Frame(self)
     def MutimenuPage(self):
         return Mutimenu(self)
+    def newSetting(self):
+        return Setting()
+    def SettingGUIPage(self,setting:Setting,multi:bool=False):
+        return guisetting(setting=setting,multi=multi)
 class font(QWidget):
     def __init__(self,Game:Game) -> None:
         super().__init__()
@@ -377,7 +381,8 @@ class GameWindow(QMainWindow):
         self.setStyleSheet(self.css())
         self.page =1
         self.setWindowTitle("Game")
-        self.guisetting = guisetting(set)
+        self.setting = set
+        
         self.setMinimumSize(500,500)
         self.__game =Game(showsetting=self.showSetting,setPage=self.setPage,setting=set,onGameScreen=self.ongamescreen)
         self.__game.addBG(self.setBgcolor)
@@ -386,6 +391,8 @@ class GameWindow(QMainWindow):
         
         self.setCentralWidget(self.menu)
     def showSetting(self):
+        self.setting.loadSave()
+        self.guisetting = guisetting(self.setting)
         self.guisetting.show()
     def setPage(self,n:QWidget):
         self.setCentralWidget(n)

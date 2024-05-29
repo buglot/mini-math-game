@@ -7,6 +7,21 @@ from PyQt6.QtCore import QObject,pyqtSignal
 class MassngeError(Exception):
     def __init__(self, *args: object) -> None:
         super().__init__(*args)
+class Player:
+    def __init__(self,name,uuid) -> None:
+        self.name = name
+        self.uuid = uuid
+        self.score = 0
+        self.ready = False
+    def upscore(self,up):
+        self.score+=up
+    def ReadysetFalse(self):
+        self.ready = False
+    def zeroScore(self):
+        self.score=0
+    def sendData(self):
+        return [self.name,self.uuid,self.score,self.ready]
+
 class TypeMassnge(QObject):
     class Type(enum.Enum):
         CHAT = 1
@@ -19,6 +34,16 @@ class TypeMassnge(QObject):
         GETLISTPEOPLE = 2
         EXIT = 3
         JOIN = 4
+    class ActionGameControll(enum.Enum):
+        WAIT=2
+        LOADMAP=3
+        SETTING=4
+        GETSETTING=8
+        UPDATESCORE=5
+        SCORE=6
+        START=7
+        ENDGAME=10
+        ALLENDEDGAME=11
     ChatActionEven = pyqtSignal(dict)
     GameControllActionEven = pyqtSignal(dict)
     SystemCallActionEven = pyqtSignal(dict)
@@ -69,3 +94,5 @@ class TypeMassnge(QObject):
             return True
         return False
 
+    def encodeByte(self,data:dict)->bytes:
+        return self.encode(data=data).encode()

@@ -2,9 +2,10 @@ import socket
 import select
 from typing import List
 from PyQt6.QtGui import QGuiApplication
-from PyQt6.QtWidgets import QApplication,QCheckBox, QMainWindow, QTextEdit, QVBoxLayout, QWidget,QLabel,QHBoxLayout
+from PyQt6.QtWidgets import QApplication,QCheckBox, QPushButton, QTextEdit, QVBoxLayout, QWidget,QLabel,QHBoxLayout
 from PyQt6.QtCore import pyqtSignal, pyqtSlot, QThread,Qt
-from mutiplayer.typeMassegeSocket import TypeMassnge
+from mutiplayer.typeMassegeSocket import TypeMassnge,Player
+from setting import guisetting,Setting
 import sys
 class ClientHandler(QThread):
     message_received = pyqtSignal(str)
@@ -51,6 +52,7 @@ class ClientHandler(QThread):
 class ServerWindow(QWidget):
     ServerIsStarted = pyqtSignal(bool)
     serverlist:List[ClientHandler]
+    listpeople:List[Player]
     def __init__(self):
         super().__init__()
         self.listpeople = []
@@ -82,6 +84,8 @@ class ServerWindow(QWidget):
         self.r.addWidget(self.port)
         self.v.addLayout(row1)
         self.v.addLayout(self.r)
+        self.setbutton = QPushButton("SETTING GAME")
+        self.v.addWidget(self.setbutton)
         self.v.addWidget(QLabel("Game LOG"))
         self.v.addWidget(self.gameLog)
         self.v.addWidget(QLabel("Chat"))
@@ -93,8 +97,50 @@ class ServerWindow(QWidget):
         self.TypeM = TypeMassnge()
         self.TypeM.SystemCallActionEven.connect(self.readall)
         self.TypeM.ChatActionEven.connect(self.__chatAction)
+        self.TypeM.GameControllActionEven.connect(self.__GameAction)
         self.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint,True)
         self.serverlist =[]
+        self.setting = Setting()
+        self.settingMulti = guisetting(setting=self.setting,multi=True)
+        self.settingMulti.saveMulti.connect(self.saveSettingEvendo)
+        self.setbutton.clicked.connect(self.showSetting)
+        self.nowdataSetting = self.setting.getSettingMulti()
+    
+    def __sendSettingGame(self)->dict:
+        return  {"type":TypeMassnge.Type.GAMECONTROLL.value,"action":TypeMassnge.ActionGameControll.SETTING.value}
+
+    def saveSettingEvendo(self,data:dict):
+        self.nowdataSetting = data
+        datasend = self.__sendSettingGame()    
+        datasend.update(self.nowdataSetting)
+        self.sendsAll(self.TypeM.encode(datasend).encode())
+
+
+    def showSetting(self):
+        self.settingMulti.show()
+    def __GameAction(self,data:dict):
+        self.gameLog.append(TypeMassnge.ActionGameControll(data["action"]).name)
+        match TypeMassnge.ActionGameControll(data["action"]):
+            case TypeMassnge.ActionGameControll.ENDGAME:
+                pass
+            case TypeMassnge.ActionGameControll.GETSETTING:
+                data = self.__sendSettingGame()
+                data.update(self.nowdataSetting)
+                self.sendsAll(self.TypeM.encode(data).encode())
+            case TypeMassnge.ActionGameControll.UPDATESCORE:
+                a=[]
+                for x in self.listpeople:
+                    if x.uuid == data["uuid"] and x.name == data["name"]:
+                        x.upscore(1)
+                    a.append(x)
+                self.listpeople = a
+                data = {"type":TypeMassnge.ActionGameControll.SCORE.value}
+                data["score"] = []
+                for x in self.listpeople:
+                    data["score"].append(x.sendData())
+                self.sendsAll(self.TypeM.encode(data).encode())
+            
+
     def startServer(self):
         self.server_thread = ServerThread(host=socket.gethostbyname(socket.gethostname()))
         self.server_thread.client_connected.connect(self.handle_client_connection)
@@ -132,21 +178,32 @@ class ServerWindow(QWidget):
                 self.text_edit.append(data["name"]+": was KICKED by Master")
             case TypeMassnge.ActionSystemCall.EXIT:
                 self.text_edit.append(data["name"]+": EXIT")
-                self.listpeople.remove([data["name"],data["uuid"]])
+                for x in self.listpeople:
+                    if x.name == data["name"] and data["uuid"]==x.uuid:
+                        self.listpeople.remove(x)
+                        break
                 print("Server 130",self.listpeople)
                 data = {"type":TypeMassnge.Type.SYSTEMCALL.value,
                         "action":TypeMassnge.ActionSystemCall.GETLISTPEOPLE.value,
                         "nPeople":len(self.listpeople),
                         "data":self.listpeople}
-                self.sendsAll(self.TypeM.encode(data).encode())
+                data["data"] = []
+                for x in self.listpeople:
+                    data["data"].append(x.sendData())
+                try:
+                    self.sendsAll(self.TypeM.encode(data).encode())
+                except OSError as e:
+                    print(e)
             case TypeMassnge.ActionSystemCall.JOIN:
-                self.listpeople.append([data["name"],data["uuid"]])
+                self.listpeople.append(Player(data["name"],data["uuid"]))
                 self.text_edit.append(data["name"]+": JOIN")
             case TypeMassnge.ActionSystemCall.CALL_LISTPEOPLE:
                 data = {"type":TypeMassnge.Type.SYSTEMCALL.value,
                         "action":TypeMassnge.ActionSystemCall.GETLISTPEOPLE.value,
-                        "nPeople":len(self.listpeople),
-                        "data":self.listpeople}
+                        "nPeople":len(self.listpeople)}
+                data["data"] = []
+                for x in self.listpeople:
+                    data["data"].append(x.sendData())
                 self.sendsAll(self.TypeM.encode(data).encode())
     def getPort(self)->int:
         return int(self.port.text())

@@ -8,7 +8,9 @@ QPushButton {
     border-radius: 10px;
     padding: 5px;
 }
-
+QLabel{
+    font-size: 16px;
+}
 QPushButton#save {
     background-color: blue;
 }
@@ -48,4 +50,7 @@ QCheckBox:checked:hover {
 }
 QCheckBox:hover{
     background-color: rgb(51, 34, 70);
+}
+QLineEdit{
+    font-size: 16px;
 }

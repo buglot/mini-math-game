@@ -1,6 +1,7 @@
 import json
 import os
-from PyQt6.QtCore import QEvent,Qt
+from typing import List
+from PyQt6.QtCore import QEvent,Qt,pyqtSignal
 from    PyQt6.QtWidgets import QWidget,QPushButton,QLabel,QLineEdit,QHBoxLayout,QVBoxLayout,QCheckBox,QMessageBox
 from enum import Enum
 class Rand:
@@ -21,20 +22,30 @@ class operation(Enum):
     #     return self.value
 class Setting:
     __mydict: dict
+    __multi:dict
     def __init__(self) -> None:
         self.__path = os.path.join("setting.json")
         self.loadSave()
+        self.__multi = self.getMultiDefualtsetting()
+        self.updateMulti()
+        
     def loadSave(self):
         self.__jsonload = json.JSONDecoder()
         if (self.ExistSave()==False):
             self.SaveDefualtSetting()
-        s = ""
+        s = ""  
         with open(self.__path) as f :
            s= f.read()
            f.close()
         self.__mydict = self.__jsonload.decode(s)
         if type(self.__mydict["digit"])==type(str):
             pass 
+    def updateMulti(self):
+        self.__multi.update(self.__mydict)
+    def SettingISDefualtSetting(self):
+        self.__mydict = self.getDefualtsetting()
+    def getSettingMulti(self)->dict:
+        return self.__multi
     def getSetting(self)->dict:
         return self.__mydict 
     def operation1ormore(self)->bool:
@@ -81,24 +92,38 @@ class Setting:
                 "timeofstep":1,
                 "operation":["+"]
                 }
+    def setMulti(self,data:dict):
+        self.__multi = data
+
+    def getMultiDefualtsetting(self)->dict:
+        return {"timeanswer":5,"swin":3,"scloser":1,"rangenumb":5}
+
     def SaveSetting(self)->None:
         self.__endocode = json.JSONEncoder()
         self.__defulat = self.__endocode.encode(self.__mydict)
         with open(self.__path,"w+") as f:
             f.write(self.__defulat)
             f.close()
+
+    def Save(self,data:dict):
+        self.__endocode = json.JSONEncoder()
+        self.__defulat = self.__endocode.encode(data)
+        with open(self.__path,"w+") as f:
+            f.write(self.__defulat)
+            f.close()
+
 class guisetting(QWidget):
-    def __init__(self,setting:Setting) -> None:
+    saveMulti = pyqtSignal(dict)
+    checkboxes :List[QCheckBox]
+    def __init__(self,setting:Setting,multi:bool=False) -> None:
         super().__init__()
         self.setObjectName("my")
-        self.setMinimumHeight(300)
-        self.setMinimumWidth(300)
+        
         self.setWindowTitle("Setting Game")
         self.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint)
         # setting
         self.__setting = setting
         self.__setting.loadSave() # new loading for sure
-        
         self.__dataSetting = self.__setting.getSetting()
         self.setStyleSheet(self.css())
         # layout
@@ -114,7 +139,6 @@ class guisetting(QWidget):
         self.__savebutton = QPushButton("Save")
         self.__savebutton.setObjectName("save")
         self.__savebutton.clicked.connect(self.__savebuttonActionClick)
-     
         self.__loaddefault = QPushButton("LOAD Default")
         self.__loaddefault.setObjectName("load")
         self.__loaddefault.clicked.connect(self.__loaddefaultbuttonActionClick)
@@ -122,25 +146,28 @@ class guisetting(QWidget):
         # lineEdit
         self.__lineEdit = QLineEdit(str(self.__dataSetting["match"]))
         self.__lineEdit.editingFinished.connect(self.__lineeditChangeAction)
+        self.__lineEdit.setObjectName("set")
 
         self.__lineEditdigit = QLineEdit(str(self.__dataSetting["digit"]))
         self.__lineEditdigit.editingFinished.connect(self.__lineeditdigitChangeAction)
-
+        self.__lineEditdigit.setObjectName("set")
+        
         self.__lineEditstep = QLineEdit(str(self.__dataSetting["step"]))
         self.__lineEditstep.editingFinished.connect(self.__lineeditstepChangeAction)
+        self.__lineEditstep.setObjectName("set")
 
         self.__lineEdittimeofstep = QLineEdit(str(self.__dataSetting["timeofstep"]))
         self.__lineEdittimeofstep.editingFinished.connect(self.__lineedittimeofstepChangeAction)
+        self.__lineEdittimeofstep.setObjectName("set")
 
         #ckeckbox
-
         self.checkboxes = []
         for opera in operation:
-            
             checkbox = QCheckBox(opera.value)
             try:
                 self.__dataSetting["operation"].index(opera.value)
                 checkbox.setChecked(True)
+                checkbox.setObjectName("set")
             except Exception:
                 pass
             
@@ -176,14 +203,32 @@ class guisetting(QWidget):
         self.__layoutcol.addLayout(self.__layoutrow4)
         self.__layoutcol.addLayout(self.__layoutrow5)
         self.__layoutcol.addLayout(self.__layoutrow)
+        self.multiw=multi
+        if self.multiw:
+            self.MultiSetting()
+            self.settingMulti = self.__setting.getSettingMulti()
+        else:
+            self.setMinimumHeight(300)
+            self.setMinimumWidth(300)
 
         # add layout in widget
         self.setLayout(self.__layoutcol)
+    def OnlyView(self):
+        self.__savebutton.setVisible(False)
+        self.__loaddefault.setVisible(False)
+        self.setDisabled(True)
+
     def __savebuttonActionClick(self,e):
-        self.__setting.SaveSetting()
-        self._a = QMessageBox()
-        self._a.setText("Save done")
-        self._a.show()
+        if self.multiw:
+            self.__setting.setMulti(self.settingMulti)
+            self.__setting.updateMulti()
+            self.saveMulti.emit(self.__setting.getSettingMulti())
+        else:
+            self.__setting.SaveSetting()
+            self._a = QMessageBox()
+            self._a.setText("Save done")
+            self._a.show()
+
     def __loaddefaultbuttonActionClick(self):
         self.__dataSetting = self.__setting.getDefualtsetting()
         self.__lineEditdigit.setText(str(self.__dataSetting["digit"]))
@@ -196,6 +241,14 @@ class guisetting(QWidget):
                 checkbox.setChecked(True)
             except Exception:
                 checkbox.setChecked(False)
+        self.timeanswer.setText(str(5))
+        self.scorewin.setText(str(3))
+        self.scorecloser.setText(str(1))
+        self.rangeofguess.setText(str(5))
+        self.settingMulti = self.__setting.getMultiDefualtsetting()
+        self.__setting.setMulti(self.settingMulti)
+        self.__setting.SettingISDefualtSetting()
+        self.__setting.updateMulti()
     def __lineeditChangeAction(self):
         try:
             self.__setting.setMatch(int(self.__lineEdit.text()))
@@ -235,6 +288,75 @@ class guisetting(QWidget):
         else:
             print(f"{sender.text()} Unchecked")
             self.__setting.dropOperation(operation(sender.text()))
+    
+    def __rangeChange(self):
+        try:
+            print(self.rangeofguess.text(),293)
+            self.settingMulti["rangenumb"] = int(self.rangeofguess.text())
+        except:
+            self.rangeofguess.setText("5")
+    def __scloseChange(self):
+        try:
+           self.settingMulti["scloser"]= int(self.scorecloser.text())
+        except:
+            self.scorecloser.setText("1")
+    def __swinChange(self):
+        try:
+            self.settingMulti["swin"]= int(self.scorewin.text())
+        except:
+            self.scorewin.setText("3")
+    def __timeanswerChange(self):
+        try:
+            self.settingMulti["timeanswer"]= int(self.timeanswer.text())
+        except:
+            self.timeanswer.setText("5")
+    def setALLSettingView(self,data:dict):
+        data.pop("type")
+        data.pop("action")
+        self.__lineEdit.setText(str(data["match"]))
+        self.__lineEditdigit.setText(str(data["digit"]))
+        self.__lineEditstep.setText(str(data["step"]))
+        self.__lineEdittimeofstep.setText(str(data["timeofstep"]))
+        for x in self.checkboxes:
+            if x.text() in data["operation"]:
+               x.setChecked(True)
+            else:
+               x.setChecked(False)
+        self.timeanswer.setText(str(data["timeanswer"]))
+        self.scorewin.setText(str(data["swin"]))
+        self.scorecloser.setText(str(data["scloser"]))
+        self.rangeofguess.setText(str(data["rangenumb"]))
+
+    
+    def MultiSetting(self):
+        row1 = QHBoxLayout()
+        row1.addWidget(QLabel("TimeofAnswer"))
+        self.timeanswer = QLineEdit("5")
+        row1.addWidget(self.timeanswer)
+        self.timeanswer.editingFinished.connect(self.__timeanswerChange)
+
+        row2 = QHBoxLayout()
+        row2.addWidget(QLabel("Score add win"))
+        self.scorewin = QLineEdit("3")
+        row2.addWidget(self.scorewin)
+        self.scorewin.editingFinished.connect(self.__swinChange)
+
+        row3 = QHBoxLayout()
+        row3.addWidget(QLabel("Score add closer"))
+        self.scorecloser = QLineEdit("1")
+        row3.addWidget(self.scorecloser)
+        self.scorecloser.editingFinished.connect(self.__scloseChange)
+
+        row4 =QHBoxLayout()
+        row4.addWidget(QLabel("Range of closer guess number"))
+        self.rangeofguess = QLineEdit("5")
+        self.rangeofguess.editingFinished.connect(self.__rangeChange)
+
+        row4.addWidget(self.rangeofguess)
+        self.__layoutcol.addLayout(row1)
+        self.__layoutcol.addLayout(row2)
+        self.__layoutcol.addLayout(row3)
+        self.__layoutcol.addLayout(row4)
 
     def css(self)->str:
         cssdata = ""

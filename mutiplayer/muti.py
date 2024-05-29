@@ -13,8 +13,9 @@ class Mutiplayer:
         pass
     def MutimenuPage(self):
         return Mutimenu(self)
+    def closeChat(self):
+        self.chat.close()
     def ClientRoomPage(self,master=True,Server:ServerWindow=None):
-        
         self.ServerGUI = self.ServerGUIPage()
         self.clinetRoom = clientGui(master=master,Server=Server,chat=self.chat)
         self.clinetRoom.setgame(self)
@@ -27,6 +28,10 @@ class Mutiplayer:
         return Chat()
     def setPage(self,page:QWidget):
         self.game.setPage(page)
+    def newSetting(self):
+        return self.game.newSetting()
+    def SettingGUIPage(self,setting,multi:bool=False):
+        return self.game.SettingGUIPage(setting,multi)
 class Mutimenu(QWidget):
     def __init__(self,Muti:Mutiplayer) -> None:
         super().__init__()

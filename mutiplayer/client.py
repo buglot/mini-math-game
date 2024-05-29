@@ -1,5 +1,5 @@
 import socket
-from PyQt6.QtWidgets import QTextEdit, QVBoxLayout, QWidget,QLabel,QPushButton,QHBoxLayout,QLineEdit
+from PyQt6.QtWidgets import QTextEdit, QVBoxLayout, QWidget,QLabel,QPushButton,QHBoxLayout,QLineEdit,QGridLayout,QScrollArea
 from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot, QThread,Qt
 from mutiplayer.server import ServerWindow
 from mutiplayer.chat import Chat
@@ -121,27 +121,45 @@ class clientGui(QWidget):
         self.name = name
         self.chat = chat
         self.setWindowTitle('Connect Server')
+
         self.__title = QLabel("Mutiplayer")
+        self.__title.setObjectName("multi")
         self.report = QLabel("")
+        self.report.setObjectName("reportmulti")
+
         self.__numb = QLabel("people in room : 0")
-        self.__numberReady = QLabel("")
+        self.__numb.setObjectName("reportmulti")
         self.__listpeoplename = QLabel()
         self.__ready = QPushButton("Ready")
         self.__ready.setObjectName("mutiready")
         self.__ready.setDisabled(True)
         self.__butclose = QPushButton("Exit Room")
         self.__butclose.clicked.connect(self.closebuttonEvent)
+        self.__settingTitle = QLabel("Setting Game")
+        self.scrollarea = QScrollArea()
+        row1 = QGridLayout()
+        col1_row1 =QVBoxLayout()
+        self.col2_row1 = QVBoxLayout()
+        
+        self.col2_row1.addWidget(self.__settingTitle)
+        self.col2_row1.addWidget(self.scrollarea)
+        layoutcolreport = QVBoxLayout()
+        layoutcolreport.setAlignment(Qt.AlignmentFlag.AlignTop)
+        layoutcolreport.addWidget(self.report)
+        layoutcolreport.addWidget(self.__numb)
         layout2 = QVBoxLayout()
-        layout2.addWidget(self.__title)
-        layout2.addWidget(self.report)
-        layout2.addWidget(self.__numb)
+        col1_row1.addWidget(self.__title)
+        col1_row1.addLayout(layoutcolreport)
+        row1.addLayout(col1_row1,0,0)
+        row1.addLayout(self.col2_row1,0,1)
+        layout2.addLayout(row1)
         layout2.addWidget(self.__listpeoplename)
-        layout2.addWidget(self.__numberReady)
         layout2.addWidget(self.__ready)
         layout2.addWidget(self.__butclose)
         self.mytype = TypeMassnge()
         self.mytype.SystemCallActionEven.connect(self.SystemCallActionEven)
         self.mytype.ChatActionEven.connect(self.___chatAction)
+        self.mytype.GameControllActionEven.connect(self.__gameAction)
         self.setLayout(layout2)
         self.chat.massnge_send.connect(self.__chat_massnge_send)
         self.chat.show()
@@ -152,6 +170,11 @@ class clientGui(QWidget):
             self.serverview.ServerIsStarted.connect(self.__ConnectServer)
         else:
             self.__ConnectServer(False)
+    def __gameAction(self,data:dict):
+        match TypeMassnge.ActionGameControll(data["action"]):
+            case TypeMassnge.ActionGameControll.SETTING:
+                self.nowSettingGame = data
+                self.settingGUI.setALLSettingView(data)
     def ___chatAction(self,data:dict):
         if self.mytype.UUID() == data["uuid"] and self.name == data["name"]:
             self.__linechat =self.chat.chatlineMe(data["msg"])
@@ -161,8 +184,10 @@ class clientGui(QWidget):
     @pyqtSlot(str)
     def __chat_massnge_send(self,msg:str):
         data = {"type":TypeMassnge.Type.CHAT.value,"name":self.name,"uuid":self.mytype.UUID(),"msg":msg}
-        self.socket_thread.send(self.mytype.encode(data=data).encode())
-
+        if self.canChat:
+            self.socket_thread.send(self.mytype.encode(data=data).encode())
+        else:
+            self.chat.addChat(self.chat.chatline("Cant send to server disconnect server","chatSystem"))
 
     @pyqtSlot(dict)
     def SystemCallActionEven(self,data:dict):
@@ -174,6 +199,10 @@ class clientGui(QWidget):
         self.serverview = gui
     def setgame(self,muti):
         self.muti = muti
+        self.setting = self.muti.newSetting()
+        self.settingGUI = self.muti.SettingGUIPage(self.setting,True)
+        self.settingGUI.OnlyView()
+        self.scrollarea.setWidget(self.settingGUI)
     def __ConnectServer(self,b):
         if b:
             self.port = self.serverview.getPort()
@@ -202,33 +231,40 @@ class clientGui(QWidget):
         data = {"type":TypeMassnge.Type.SYSTEMCALL.value,
                 "action":TypeMassnge.ActionSystemCall.CALL_LISTPEOPLE.value}
         return data
+    def callGameSetting(self):
+        data = {"type":TypeMassnge.Type.GAMECONTROLL.value,
+                "action":TypeMassnge.ActionGameControll.GETSETTING.value}
+        return data
     @pyqtSlot(int)
     def update_connection_status(self, connected):
         if connected==1:
             self.report.setText("Connected to the server.")
-            
+            self.canChat = True
             self.socket_thread.send(self.mytype.encode(self.joinServer()).encode())
             self.socket_thread.send(self.mytype.encode(self.callPlayer()).encode())
+            self.socket_thread.send(self.mytype.encode(self.callGameSetting()).encode())
             self.__ready.setDisabled(False)
         elif connected==2:
             self.report.setText("Connecting......")
         else:
             self.report.setText("disconnected to the server.")
             self.__ready.setDisabled(True)
+            self.canChat =False
     def closebuttonEvent(self):
         self.socket_thread.stop()
         if self.__master:
             self.serverview.close()
+        self.muti.closeChat()
         self.muti.setPage(self.muti.MutimenuPage())
     def closeEvent(self, event):
         if self.__master:
             self.serverview.close()
-        self.chat.close()
+        self.muti.closeChat()
         super().closeEvent(event)
     def __dochecker(self, b: bool):
         if not b:
             self.report.setText("disconnected to the server.")
             self.__ready.setDisabled(True)
-        
+            self.canChat =False
         print(b)
-            
+        
