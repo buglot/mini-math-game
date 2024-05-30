@@ -1,5 +1,5 @@
 from PyQt6.QtCore import Qt,pyqtSignal,QTimer, QTime
-from PyQt6.QtWidgets import QWidget,QPushButton,QLabel,QLineEdit,QHBoxLayout,QVBoxLayout,QMainWindow,QMessageBox,QStyle
+from PyQt6.QtWidgets import QWidget,QPushButton,QLabel,QLineEdit,QHBoxLayout,QVBoxLayout,QMainWindow,QMessageBox,QLayout
 from setting import Setting,guisetting,operation as Op
 from typing import List
 from mutiplayer.muti import Mutimenu,Mutiplayer
@@ -11,20 +11,24 @@ class Answer(QWidget):
         self.__mode = QLabel("Answer")
         self.__mode.setObjectName("mode")
         self.__mode.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.__line =QLineEdit()
+        self.line =QLineEdit()
         self.__layoutcol = QVBoxLayout()
         self.__layoutcol.addWidget(self.__mode)
-        self.__layoutcol.addWidget(self.__line)
+        self.__layoutcol.addWidget(self.line)
+        self.__layoutcol.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.__currect = QLabel()
         self.__currect.setObjectName("time")
         self.__layoutcol.addWidget(self.__currect)
         self.__currect.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         self.__currect.setVisible(False)
-        self.__line.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
-
-        self.__line.setFocus()
+        self.line.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        self.score = QLabel()
+        self.line.setFocus()
+        self.score.setVisible(False)
+        self.score.setObjectName("total")
         self.__buttonnext = QPushButton("next")
         self.__buttonnext.setVisible(False)
+        self.__layoutcol.addWidget(self.score)
         self.__layoutcol.addWidget(self.__buttonnext)
         self.setLayout(self.__layoutcol)
     def addActionDoWhenEnterkey(self,func):
@@ -41,9 +45,12 @@ class Answer(QWidget):
         self.__currect.setText(n)
     def currentShow(self):
         self.__currect.setVisible(True)
+    def Showscoreadd(self):
+        self.score.setVisible(True)
+    def buttonnextShow(self):
         self.__buttonnext.setVisible(True)
     def getAnswer(self)->str:
-        return self.__line.text()
+        return self.line.text()
     def css(self)->str:
         a=""
         with open("GameGUI.css") as f:
@@ -71,14 +78,16 @@ class Frame(QWidget):
        
         #layout
         self.__layoutcol = QVBoxLayout()
-        self.__layoutother = QHBoxLayout()
-
+        self.__layoutother = QVBoxLayout()
+        self.__layoutother.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.__layoutcol.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.__layoutcol.addWidget(self.__mode)
         self.__layoutcol.addWidget(self.__start)
         self.__layoutcol.addWidget(self.__time)
         self.__layoutcol.addLayout(self.__layoutother)
         self.setLayout(self.__layoutcol)
+    def addLayoutother(self,w:QWidget):
+        self.__layoutother.addLayout(w)
     def addOtherWidget(self,w:QWidget):
         self.__layoutother.addWidget(w)
     def setMode(self,msg:str):
@@ -231,6 +240,7 @@ class Game:
         self.step+=1 
     def showCurrent(self):
         self.send.currentShow()
+        self.send.buttonnextShow()
         self.send.setcurrent(str(self.__result[self.__nowMatch]))
     def ActionwhensendR(self):
         if self.__nowMatch+1 == self.setting.getSetting()["match"]:
@@ -320,7 +330,7 @@ class Game:
     def GamePage(self)->GameGUI:
         return GameGUI(1)
     def FramePage(self):
-        return Frame(self)
+        return Frame()
     def MutimenuPage(self):
         return Mutimenu(self)
     def newSetting(self):

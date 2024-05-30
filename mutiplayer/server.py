@@ -1,11 +1,12 @@
 import socket
 import select
+import random
 from typing import List
 from PyQt6.QtGui import QGuiApplication
 from PyQt6.QtWidgets import QApplication,QCheckBox, QPushButton, QTextEdit, QVBoxLayout, QWidget,QLabel,QHBoxLayout
 from PyQt6.QtCore import pyqtSignal, pyqtSlot, QThread,Qt
 from mutiplayer.typeMassegeSocket import TypeMassnge,Player
-from setting import guisetting,Setting
+from setting import guisetting,Setting,operation as Op
 import sys
 class ClientHandler(QThread):
     message_received = pyqtSignal(str)
@@ -58,35 +59,52 @@ class ServerWindow(QWidget):
         super().__init__()
         self.listpeople = []
         self.setWindowTitle('Socket Server with PyQt6 QThread')
+        
+        #QLabel
         self.l = QLabel("SERVER")
         self.l.setObjectName("OpenServer")
         self.port = QLabel()
-        self.v = QVBoxLayout()
-        self.text_edit = QTextEdit()
-        self.chat =QTextEdit()
-        self.gameLog = QTextEdit()
         self.host = QLabel(f"{socket.gethostbyname(socket.gethostname())}:")
         self.port.setObjectName("Lurl")
         self.host.setObjectName("Lurl")
-        self.checkbox = QCheckBox()
-        self.checkbox.setText("Pin Top")
-        self.checkbox.setChecked(True)
-        self.checkbox.stateChanged.connect(self.checkboxAction)
         self.host.setToolTip("Click for Copy")
         self.port.setToolTip("Click for Copy")
         self.host.mouseReleaseEvent = self.copy
         self.port.mouseReleaseEvent = self.copy
+
+
+        #TextEdit
+        self.text_edit = QTextEdit()
+        self.chat =QTextEdit()
+        self.gameLog = QTextEdit()
+        
+        #QCheckBox
+        self.checkbox = QCheckBox()
+        self.checkbox.setText("Pin Top")
+        self.checkbox.setChecked(True)
+        self.checkbox.stateChanged.connect(self.checkboxAction)
+
+        #QPushButton
+        self.setbutton = QPushButton("SETTING GAME")
+        self.setZeroScore = QPushButton("set Score 0")
+
+        #layout
         row1 = QHBoxLayout()
         row1.addWidget(self.l)
         row1.addWidget(self.checkbox)
+        self.v = QVBoxLayout()
         self.r = QHBoxLayout()
         self.r.setAlignment(Qt.AlignmentFlag.AlignLeft)
+
+        # addWidget
         self.r.addWidget(self.host)
         self.r.addWidget(self.port)
+        
         self.v.addLayout(row1)
         self.v.addLayout(self.r)
-        self.setbutton = QPushButton("SETTING GAME")
+        
         self.v.addWidget(self.setbutton)
+        self.v.addWidget(self.setZeroScore)
         self.v.addWidget(QLabel("Game LOG"))
         self.v.addWidget(self.gameLog)
         self.v.addWidget(QLabel("Chat"))
@@ -95,18 +113,29 @@ class ServerWindow(QWidget):
         self.v.addWidget(self.text_edit)
         self.setLayout(self.v)
         self.setStyleSheet(self.css())
+
+        #TypeMassnge
         self.TypeM = TypeMassnge()
         self.TypeM.SystemCallActionEven.connect(self.readall)
         self.TypeM.ChatActionEven.connect(self.__chatAction)
         self.TypeM.GameControllActionEven.connect(self.__GameAction)
+
+        #other
         self.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint,True)
+
         self.serverlist =[]
         self.setting = Setting()
         self.settingMulti = guisetting(setting=self.setting,multi=True)
         self.settingMulti.saveMulti.connect(self.saveSettingEvendo)
         self.setbutton.clicked.connect(self.showSetting)
+        self.setZeroScore.clicked.connect(self.__setZeoroButtonAction)
         self.nowdataSetting = self.setting.getSettingMulti()
     
+    def __setZeoroButtonAction(self):
+        for x in self.listpeople:
+            x.zeroScore()
+        
+
     def __sendSettingGame(self)->dict:
         return  {"type":TypeMassnge.Type.GAMECONTROLL.value,"action":TypeMassnge.ActionGameControll.SETTING.value}
 
@@ -135,19 +164,25 @@ class ServerWindow(QWidget):
                 data.update(self.nowdataSetting)
                 self.sendsAll(self.TypeM.encode(data).encode())
             case TypeMassnge.ActionGameControll.UPDATESCORE:
-                a=[]
+                
                 for x in self.listpeople:
                     if x.uuid == data["uuid"] and x.name == data["name"]:
-                        x.upscore(1)
-                    a.append(x)
-                self.listpeople = a
-                data = {"type":TypeMassnge.ActionGameControll.SCORE.value}
-                data["score"] = []
-                for x in self.listpeople:
-                    data["score"].append(x.sendData())
-                self.sendsAll(self.TypeM.encode(data).encode())
-            
-
+                        x.upscore(data["up"])
+                        data = {"type":TypeMassnge.ActionGameControll.SCORE.value}
+                        data["score"] = x.score
+                        data["uuid"] = x.uuid
+                        data["name"] = x.name
+                        self.sendsAll(self.TypeM.encode(data).encode())
+                        break
+            case TypeMassnge.ActionGameControll.START:
+                self.__generateGamge()
+                data = {"type":TypeMassnge.Type.GAMECONTROLL.value,
+                        "action":TypeMassnge.ActionGameControll.START.value,
+                        "number":self.__numbers,
+                        "operations": self.__operations,
+                        "result":self.__result
+                        }
+                self.sendsAll(self.TypeM.encodeByte(data))
     def startServer(self):
         self.server_thread = ServerThread(host=socket.gethostbyname(socket.gethostname()))
         self.server_thread.client_connected.connect(self.handle_client_connection)
@@ -174,6 +209,14 @@ class ServerWindow(QWidget):
     def sendsAll(self,msg):
         for x in self.serverlist:
             x.send(msg)
+    def defualtsendPeopleRoom(self)->dict:
+        data = {"type":TypeMassnge.Type.SYSTEMCALL.value,
+                        "action":TypeMassnge.ActionSystemCall.GETLISTPEOPLE.value,
+                        "nPeople":len(self.listpeople)}
+        data["data"] = []
+        for x in self.listpeople:
+            data["data"].append(x.sendData())
+        return data
     def copy(self,e):
          QGuiApplication.clipboard().setText(self.host.text()+self.port.text())
     @pyqtSlot(dict)
@@ -182,35 +225,32 @@ class ServerWindow(QWidget):
             case TypeMassnge.ActionSystemCall.PING:
                 self.text_edit.append(data["name"]+": PING")
             case TypeMassnge.ActionSystemCall.KICK:
-                self.text_edit.append(data["name"]+": was KICKED by Master")
+                self.sendsAll(self.TypeM.encodeByte(data))
+                
+                for x in self.listpeople:
+                    if x.name == data["name"] and data["uuid"]==x.uuid and data["uuid"] !=self.TypeM.UUID():
+                        self.listpeople.remove(x)
+                        self.text_edit.append(data["name"]+": was KICKED by Master")
+                        break
+                try:
+                    self.sendsAll(self.TypeM.encode(self.defualtsendPeopleRoom()).encode())
+                except OSError as e:
+                    print(e)
             case TypeMassnge.ActionSystemCall.EXIT:
                 self.text_edit.append(data["name"]+": EXIT")
                 for x in self.listpeople:
                     if x.name == data["name"] and data["uuid"]==x.uuid:
                         self.listpeople.remove(x)
                         break
-                data = {"type":TypeMassnge.Type.SYSTEMCALL.value,
-                        "action":TypeMassnge.ActionSystemCall.GETLISTPEOPLE.value,
-                        "nPeople":len(self.listpeople),
-                        "data":self.listpeople}
-                data["data"] = []
-                for x in self.listpeople:
-                    data["data"].append(x.sendData())
                 try:
-                    self.sendsAll(self.TypeM.encode(data).encode())
+                    self.sendsAll(self.TypeM.encode(self.defualtsendPeopleRoom()).encode())
                 except OSError as e:
                     print(e)
             case TypeMassnge.ActionSystemCall.JOIN:
                 self.listpeople.append(Player(data["name"],data["uuid"]))
                 self.text_edit.append(data["name"]+": JOIN")
             case TypeMassnge.ActionSystemCall.CALL_LISTPEOPLE:
-                data = {"type":TypeMassnge.Type.SYSTEMCALL.value,
-                        "action":TypeMassnge.ActionSystemCall.GETLISTPEOPLE.value,
-                        "nPeople":len(self.listpeople)}
-                data["data"] = []
-                for x in self.listpeople:
-                    data["data"].append(x.sendData())
-                self.sendsAll(self.TypeM.encode(data).encode())
+                self.sendsAll(self.TypeM.encode(self.defualtsendPeopleRoom()).encode())
     def getPort(self)->int:
         return int(self.port.text())
     @pyqtSlot(int)
@@ -245,6 +285,45 @@ class ServerWindow(QWidget):
         super().closeEvent(event)
     def server_thread_ended(self):
         print("server closed")
+    def __generateGamge(self):
+        setting = self.setting.getSetting()
+        self.__numbers = []
+        self.__operations =[]
+        self.__result = []
+        matchgame = setting["match"]
+        digit = setting["digit"]
+        step = setting["step"]
+        operation = setting["operation"]
+        for matchgame_ in range(matchgame):
+            listnum = []
+            listope = []
+            result =""
+            for x in range(step):
+                if x>0:
+                    op = Op(random.choice(operation))
+                    listope.append(op.value)
+                    if op == Op.Division:
+                        result+="/"
+                    elif op == Op.Multiplication:
+                        result+="*"
+                    else:
+                        result+=op.value
+                maxnumber = (10**digit)-1
+                if (w:=round(random.random()*(10**digit))) == 0:
+                    listnum.append(1)
+                    result+="1"
+                    result = str(round(eval(result)))
+                elif w>maxnumber:
+                    listnum.append(maxnumber)
+                    result+=str(maxnumber)
+                    result = str(round(eval(result)))
+                else:
+                    listnum.append(w)
+                    result+=str(w)
+                    result = str(round(eval(result)))
+            self.__numbers.append(listnum)
+            self.__operations.append(listope)
+            self.__result.append(round(eval(result)))
 class ServerThread(QThread):
     client_connected = pyqtSignal(socket.socket)
     nowPort = pyqtSignal(int)

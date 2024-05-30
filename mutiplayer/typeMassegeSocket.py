@@ -36,15 +36,12 @@ class TypeMassnge(QObject):
         JOIN = 4
     class ActionGameControll(enum.Enum):
         READY=1
-        WAIT=2
-        LOADMAP=3
         SETTING=4
         GETSETTING=8
         UPDATESCORE=5
         SCORE=6
         START=7
         ENDGAME=10
-        ALLENDEDGAME=11
     ChatActionEven = pyqtSignal(dict)
     GameControllActionEven = pyqtSignal(dict)
     SystemCallActionEven = pyqtSignal(dict)

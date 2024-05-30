@@ -1,6 +1,7 @@
 import socket
-from PyQt6.QtWidgets import QTextEdit, QVBoxLayout, QWidget,QLabel,QPushButton,QHBoxLayout,QLineEdit,QGridLayout,QScrollArea,QCheckBox
+from PyQt6.QtWidgets import QTextEdit, QVBoxLayout, QWidget,QLabel,QPushButton,QHBoxLayout,QLineEdit,QGridLayout,QScrollArea,QCheckBox,QStyle
 from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot, QThread,Qt
+from PyQt6.QtGui import QPalette, QColor
 from mutiplayer.server import ServerWindow
 from mutiplayer.chat import Chat
 from typing import List
@@ -117,6 +118,7 @@ class clientGui(QWidget):
         self.host=host
         self.name = name
         self.chat = chat
+        self.ready = False
         self.setWindowTitle('Connect Server')
         
         self.__profiles = Profiles()
@@ -135,6 +137,10 @@ class clientGui(QWidget):
         self.ch.clicked.connect(self.chat.show)
         self.__listpeoplename = QLabel()
         # row
+        self.__startgameButton = QPushButton("START")
+        self.__startgameButton.clicked.connect(self.__startButtonAction)
+        self.__startgameButton.setDisabled(True)
+
         self.__ready = QPushButton("Ready")
         self.__ready.setObjectName("mutiready")
         self.__ready.setDisabled(True)
@@ -170,7 +176,10 @@ class clientGui(QWidget):
         row1.addLayout(self.col2_row1,0,1)
         layout2.addLayout(row1)
         layout2.addWidget(self.scrollareaplayper)
-        layout2.addWidget(self.__ready)
+        if self.__master:
+            layout2.addWidget(self.__startgameButton)
+        else:
+            layout2.addWidget(self.__ready)
         layout2.addWidget(self.__butclose)
 
 
@@ -189,6 +198,15 @@ class clientGui(QWidget):
             self.serverview.ServerIsTabClose.connect(self.__dochecker)
         else:
             self.__ConnectServer(False)
+    def __startButtonAction(self):
+        if self.__profiles.isAllready():
+            print("allready")
+            data = {"type":TypeMassnge.Type.GAMECONTROLL.value,
+                    "action":TypeMassnge.ActionGameControll.START.value}
+            self.socket_thread.send(self.mytype.encodeByte(data=data))
+        else:
+            print("some no ready")
+
     def __gameAction(self,data:dict):
         match TypeMassnge.ActionGameControll(data["action"]):
             case TypeMassnge.ActionGameControll.SETTING:
@@ -196,6 +214,17 @@ class clientGui(QWidget):
                 self.settingGUI.setALLSettingView(data)
             case TypeMassnge.ActionGameControll.READY:
                 self.__profiles.setready(Player(data["name"],data["uuid"]),data["ready"])
+            case TypeMassnge.ActionGameControll.START:
+                self.muti.setNumber(data["number"])
+                self.muti.setOp(data["operations"])
+                self.muti.setResult(data["result"])
+                self.muti.setSendServer(self.socket_thread.send)
+                self.muti.setProfilesList(self.__profiles.getWidget())
+                self.muti.setNowsetting(self.nowSettingGame)
+                self.muti.start()
+            case TypeMassnge.ActionGameControll.SCORE:
+                self.__profiles.scoreUp(data["up"],Player(data["name"],data["uuid"]))
+                self.muti.setProfilesList(self.__profiles.getWidget())
     def ___chatAction(self,data:dict):
         if self.mytype.UUID() == data["uuid"] and self.name == data["name"]:
             self.__linechat =self.chat.chatlineMe(data["msg"])
@@ -213,17 +242,25 @@ class clientGui(QWidget):
     @pyqtSlot(dict)
     def SystemCallActionEven(self,data:dict):
         match TypeMassnge.ActionSystemCall(data["action"]):
+            case TypeMassnge.ActionSystemCall.KICK:
+                if self.name == data["name"] and self.mytype.UUID() == data["uuid"]:
+                    if not self.__master:
+                        self.muti.Kick()
+                        self.closebuttonEvent()
             case TypeMassnge.ActionSystemCall.GETLISTPEOPLE:
                 self.__profiles.clear()
                 rowlistPlayroom = QHBoxLayout()
                 widget =QWidget()
                 widget.setLayout(rowlistPlayroom)
                 for x in data["data"]:
-                    profile = Profile(x[0],x[1],x[3],x[2])
+                    profile = Profile(x[0],x[1],x[3],x[2],self.__master)
+                    profile.kickEven.connect(self.sendKick)
                     self.__profiles.addList(profile)
                     rowlistPlayroom.addWidget(self.__profiles.getWidget()[-1])
                 self.__numb.setText("people in room : "+str(data["nPeople"]))
                 self.scrollareaplayper.setWidget(widget)
+    def sendKick(self,st:str):
+        self.socket_thread.send(st.encode())
     def setServerGUI(self,gui:ServerWindow):
         self.serverview = gui
     def setgame(self,muti):
@@ -236,6 +273,7 @@ class clientGui(QWidget):
         if b:
             self.port = self.serverview.getPort()
             self.host = self.serverview.getHost()
+            self.__startgameButton.setDisabled(False)
         self.socket_thread = SocketThread(self.host,self.port)
         self.socket_thread.message_received.connect(self.display_message)
         self.socket_thread.connection_status_changed.connect(self.update_connection_status)
@@ -305,38 +343,71 @@ class clientGui(QWidget):
         if not b:
             self.report.setText("disconnected to the server.")
             self.__ready.setDisabled(True)
+            self.__startgameButton.setDisabled(True)
             self.canChat =False
             self.socket_thread.stop()
             self.checker.stop()
 
     def __readybuttonAction(self):
-        self.socket_thread.send(self.mytype.encodeByte(self.sendReadyProfile(True)))
+        if self.ready:
+            self.socket_thread.send(self.mytype.encodeByte(self.sendReadyProfile(False)))
+            self.ready=False
+            self.__ready.setText("Unready")
+            self.__ready.setObjectName("mutiready1")
+        else:
+            self.socket_thread.send(self.mytype.encodeByte(self.sendReadyProfile(True)))
+            self.__ready.setText("Ready")
+            self.__ready.setObjectName("mutiready")
+            self.ready=True
 class Profile(QWidget):
-    def __init__(self, name, uuid, read,score) -> None:
+    kickEven =pyqtSignal(str)
+    def __init__(self, name, uuid, read,score,master=False) -> None:
         super().__init__()
-        self.setObjectName("multiWidget")
         self.Player = Player(name,uuid)
         self.Player.ready = read
         self.Player.score = score
+        row = QHBoxLayout()
         self.name =QLabel(name)
         self.name.setObjectName("nameMultiplayer")
+        self.name.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         self.score =QLabel(str(self.Player.score))
+        self.score.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.ready = QCheckBox()
         self.ready.setChecked(self.Player.ready)
+        self.ready.setObjectName("checkready")
         self.checking(self.Player.ready)
         self.ready.stateChanged.connect(self.__ready_stateChanged)
+
         layout = QVBoxLayout()
+        layout.addWidget(self.ready)
         layout.addWidget(self.name)
         layout.addWidget(self.score)
-        layout.addWidget(self.ready)
+        self.kick1 = QPushButton("Kick")
+        if master:
+            self.kick1.setObjectName("kick1")
+            self.kick1.clicked.connect(self.kick)
+            layout.addWidget(self.kick1)
+        self.ready.setDisabled(True)
         self.setLayout(layout)
-   
+    def kick(self):
+        typeM = TypeMassnge()
+        data = {"type":TypeMassnge.Type.SYSTEMCALL.value,"action":TypeMassnge.ActionSystemCall.KICK.value}
+        data["name"] = self.Player.name
+        data["uuid"] = self.Player.uuid
+        self.kickEven.emit(typeM.encode(data))
     def update(self):
         self.score.setText(str(self.Player.score))
         self.ready.setChecked(self.Player.ready)
     def __ready_stateChanged(self,r):
         self.checking(Qt.CheckState(r)==Qt.CheckState.Checked)
-
+    def changeBg(self):
+        palette = QPalette()
+        palette.setColor(QPalette.ColorRole.Window, QColor(34, 20, 43))
+        self.setPalette(palette)
+        self.setAutoFillBackground(True)
+    def inGame(self):
+        self.ready.setVisible(False)
+        self.kick1.setVisible(False)
     def checking(self,b:bool):
         if b:
             self.ready.setText("Ready")
@@ -367,7 +438,7 @@ class Profiles:
     def scoreUp(self,n:int,p:Player):
          for x in self.__playerlist:
             if x.Player.uuid == p.uuid and x.Player.name == p.name:
-                x.Player.upscore(n)
+                x.Player.score =n
                 x.update()
                 break
     
