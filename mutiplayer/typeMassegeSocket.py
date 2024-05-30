@@ -37,9 +37,9 @@ class TypeMassnge(QObject):
     class ActionGameControll(enum.Enum):
         READY=1
         SETTING=4
-        GETSETTING=8
         UPDATESCORE=5
         SCORE=6
+        GETSETTING=8
         START=7
         ENDGAME=10
     ChatActionEven = pyqtSignal(dict)

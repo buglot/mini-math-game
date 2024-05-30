@@ -221,9 +221,10 @@ class clientGui(QWidget):
                 self.muti.setSendServer(self.socket_thread.send)
                 self.muti.setProfilesList(self.__profiles.getWidget())
                 self.muti.setNowsetting(self.nowSettingGame)
+                self.muti.setName(self.name)
                 self.muti.start()
             case TypeMassnge.ActionGameControll.SCORE:
-                self.__profiles.scoreUp(data["up"],Player(data["name"],data["uuid"]))
+                self.__profiles.scoreUp(data["score"],Player(data["name"],data["uuid"]))
                 self.muti.setProfilesList(self.__profiles.getWidget())
     def ___chatAction(self,data:dict):
         if self.mytype.UUID() == data["uuid"] and self.name == data["name"]:

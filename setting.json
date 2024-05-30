@@ -1,1 +1,1 @@
-{"match": 1, "digit": 1, "step": 5, "timeofstep": 1, "operation": ["+", "x"]}
+{"match": 3, "digit": 1, "step": 2, "timeofstep": 0.4, "operation": ["+"]}

@@ -168,7 +168,8 @@ class ServerWindow(QWidget):
                 for x in self.listpeople:
                     if x.uuid == data["uuid"] and x.name == data["name"]:
                         x.upscore(data["up"])
-                        data = {"type":TypeMassnge.ActionGameControll.SCORE.value}
+                        data = {"action":TypeMassnge.ActionGameControll.SCORE.value}
+                        data["type"] = TypeMassnge.Type.GAMECONTROLL.value
                         data["score"] = x.score
                         data["uuid"] = x.uuid
                         data["name"] = x.name

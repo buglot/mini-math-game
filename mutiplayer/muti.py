@@ -2,6 +2,7 @@ from PyQt6.QtWidgets import  QWidget,QPushButton,QLabel,QVBoxLayout,QHBoxLayout,
 from PyQt6.QtCore import Qt, pyqtSignal,pyqtSlot,QTimer, QTime
 from mutiplayer.client import clientGui,ConnectIP_port,Profile
 from mutiplayer.server import ServerWindow
+from mutiplayer.typeMassegeSocket import TypeMassnge
 from mutiplayer.chat import Chat
 from setting import operation as Op
 from typing import List
@@ -113,6 +114,7 @@ class Mutiplayer:
         self.timer.timeout.connect(self.__updateDisplayAnswer)
         self.send.currentShow()
         self.send.setcurrent(str(self.nowSetting["timeanswer"]))
+        self.can = True
         self.timer.start(int(1000))
     def __updateDisplayAnswer(self):
         if type(self.nowSetting["timeanswer"]) == int:
@@ -124,7 +126,7 @@ class Mutiplayer:
             self.send.line.setDisabled(True)
             self.send.Showscoreadd()
             self.checkresultisCorrect()
-            
+            self.can = False
         if self.time_left == QTime(0, 0, 0):
             if self.__nowMatch+1 == self.nowSetting["match"]:
                 self.GUIgame.close()
@@ -143,16 +145,33 @@ class Mutiplayer:
             if x ==(self.__result[self.__nowMatch]):
                 self.send.setcurrent("Correct "+str(self.__result[self.__nowMatch]))
                 self.send.score.setText("+ "+str(self.nowSetting["swin"]))
+                self.TypeM = TypeMassnge()
+                if self.can:
+                    data = {"type":TypeMassnge.Type.GAMECONTROLL.value,
+                            "action":TypeMassnge.ActionGameControll.UPDATESCORE.value,
+                            "name":self.name,
+                            "uuid":self.TypeM.UUID(),
+                            "up":self.nowSetting["swin"]}
+                    
+                    self.sendServer(self.TypeM.encodeByte(data=data))
             elif x<=(self.__result[self.__nowMatch]+self.nowSetting["rangenumb"]) and x>=(self.__result[self.__nowMatch]-self.nowSetting["rangenumb"]):
                 self.send.setcurrent("You closer "+str(self.__result[self.__nowMatch]))
                 self.send.score.setText("+ "+str(self.nowSetting["scloser"]))
+                if self.can:
+                    data = {"type":TypeMassnge.Type.GAMECONTROLL.value,
+                            "action":TypeMassnge.ActionGameControll.UPDATESCORE.value,
+                            "name":self.name,
+                            "uuid":self.TypeM.UUID(),
+                            "up":self.nowSetting["scloser"]}
+                    self.sendServer(self.TypeM.encodeByte(data=data))
             else:
                 self.send.setcurrent("Incorrect "+str(self.__result[self.__nowMatch]))
                 self.send.score.setText("+ 0")
         except ValueError:
             self.send.setcurrent("Incorrect "+str(self.__result[self.__nowMatch]))
             self.send.score.setText("+ 0")
-        
+    def setName(self,name):
+        self.name = name
     def bank(self,even):
         pass
     def getGUIgameWindow(self)->QMainWindow:
@@ -187,9 +206,9 @@ class Mutiplayer:
         self.a.setText("You were kicked out of the room by the master.")
         self.a.show()
     def setSendServer(self,o):
-        self.send = o
+        self.send1 = o
     def sendServer(self,data:bytes):
-        self.send(data)
+        self.send1(data)
 class Mutimenu(QWidget):
     def __init__(self,Muti:Mutiplayer) -> None:
         super().__init__()
