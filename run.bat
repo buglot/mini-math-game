@@ -1,4 +1,6 @@
 @ECHO OFF
+setlocal enabledelayedexpansion
+
 if not defined PYTHON (set PYTHON=python)
 if not defined VENV_DIR (set "VENV_DIR=%~dp0%env")
 
