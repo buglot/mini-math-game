@@ -134,7 +134,7 @@ class ServerWindow(QWidget):
     def __setZeoroButtonAction(self):
         for x in self.listpeople:
             x.zeroScore()
-        
+        self.sendsAll(self.TypeM.encode(self.defualtsendPeopleRoom()).encode())
 
     def __sendSettingGame(self)->dict:
         return  {"type":TypeMassnge.Type.GAMECONTROLL.value,"action":TypeMassnge.ActionGameControll.SETTING.value}

@@ -130,6 +130,7 @@ class Mutiplayer:
         if self.time_left == QTime(0, 0, 0):
             if self.__nowMatch+1 == self.nowSetting["match"]:
                 self.GUIgame.close()
+                self.__nowMatch=0
             else:
                 self.__nowMatch+=1
                 self.__frame =self.newFrame()
@@ -140,12 +141,13 @@ class Mutiplayer:
                 self.newScore()
                 self.__countStartDown()
     def checkresultisCorrect(self):
+        self.TypeM = TypeMassnge()
         try:
             x = int(self.send.line.text())
             if x ==(self.__result[self.__nowMatch]):
                 self.send.setcurrent("Correct "+str(self.__result[self.__nowMatch]))
                 self.send.score.setText("+ "+str(self.nowSetting["swin"]))
-                self.TypeM = TypeMassnge()
+                
                 if self.can:
                     data = {"type":TypeMassnge.Type.GAMECONTROLL.value,
                             "action":TypeMassnge.ActionGameControll.UPDATESCORE.value,
