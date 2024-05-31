@@ -2,7 +2,6 @@ from PyQt6.QtWidgets import  QWidget,QPushButton,QLabel,QVBoxLayout,QHBoxLayout,
 from PyQt6.QtCore import Qt, pyqtSignal,pyqtSlot,QTimer, QTime
 from mutiplayer.client import clientGui,ConnectIP_port,Profile
 from mutiplayer.server import ServerWindow
-import pyautogui
 from mutiplayer.typeMassegeSocket import TypeMassnge
 from mutiplayer.chat import Chat
 from setting import operation as Op
