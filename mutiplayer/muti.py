@@ -2,6 +2,7 @@ from PyQt6.QtWidgets import  QWidget,QPushButton,QLabel,QVBoxLayout,QHBoxLayout,
 from PyQt6.QtCore import Qt, pyqtSignal,pyqtSlot,QTimer, QTime
 from mutiplayer.client import clientGui,ConnectIP_port,Profile
 from mutiplayer.server import ServerWindow
+import pyautogui
 from mutiplayer.typeMassegeSocket import TypeMassnge
 from mutiplayer.chat import Chat
 from setting import operation as Op
@@ -104,6 +105,7 @@ class Mutiplayer:
             self.send.keyPressEvent = self.bank
             self.GUIgame.setPage(self.send)
             self.__timeofAnswer()
+            self.send.line.setFocus()
         self.step+=1 
     def __timeofAnswer(self):
         self.timer = QTimer(self.send)

@@ -23,7 +23,6 @@ class Answer(QWidget):
         self.__currect.setVisible(False)
         self.line.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.score = QLabel()
-        self.line.setFocus()
         self.score.setVisible(False)
         self.score.setObjectName("total")
         self.__buttonnext = QPushButton("next")
